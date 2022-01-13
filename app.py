@@ -68,6 +68,7 @@ def clean_quantity(quantity):
     else:
         return int(quantity)
 
+
 def clean_id(id_str, id_options):
     try:
         product_id = int(id_str)
@@ -89,27 +90,27 @@ def clean_id(id_str, id_options):
             return
 
 
-def price_dirty(price_int):
-    price_str = price_int / 100
-    return f'$ {price_str}'
-
-
-def date_dirty(date_obj):
-    pass
+def check_product(name_str):
+    name_list = []
+    products = session.query(Product)
+    for product in products:
+        name_list.append(product.product_name)
+    if name_str in name_list:
+        return True
+    else:
+        return False
+    # print(name_list)
 
 
 def backup_csv():
     header = ['product_name', 'product_price', 'product_quantity', 'date_updated']
-    data = session.query(Product.product_name, Product.product_price, Product.product_quantity, Product.date_updated)
+    data = session.query(Product.product_name, Product.product_price, Product.product_quantity, Product.date_updated).all()
+
     with open('store-inventory///backup.csv', 'w', newline="") as csvfile:
 
         writer = csv.writer(csvfile)
-
         writer.writerow(header)
-        for row in data:
-            if row == row[1]:
-                price_dirty(row)
-            writer.writerow(row)
+        writer.writerows(data)
 
     print('Database successfully backed up!')
     time.sleep(1.5)
@@ -176,11 +177,29 @@ def app():
                 date = clean_date(date)
                 if type(date) == datetime.date:
                     date_error = False
-            new_product = Product(product_name=name, product_price=price, product_quantity=quantity, date_updated=date)
-            session.add(new_product)
-            session.commit()
-            print("Product successfully added")
-            time.sleep(1.5)
+            if check_product(name):
+                product_to_update = session.query(Product.product_name, Product.date_updated).filter(Product.product_name==name).first()
+                #print(product_to_update)
+
+                if product_to_update.date_updated <= date:
+                    product_to_update.date_updated = date
+                    session.commit()
+                    backup_csv()
+                else:
+                    product_to_update.product_price = price
+                    product_to_update.product_quantity = quantity
+                    session.commit()
+                    print('The else clause is running')
+                    backup_csv()
+            else:
+                new_product = Product(product_name=name, product_price=price, product_quantity=quantity, date_updated=date)
+                session.add(new_product)
+                session.commit()
+                print("Product successfully added")
+                time.sleep(1.5)
+
+                # find and return the dupicate by name
+                # only update the price, quantity, and date
         elif choice == 'b':
             backup_csv()
         else:
@@ -192,20 +211,3 @@ if __name__ == "__main__":
     Base.metadata.create_all(engine)
     add_csv()
     app()
-
-    # for item in session.query(Product):
-    #     print(item)
-
-    # print(clean_price('$9.34'))
-    # print(clean_date('4/15/2018'))
-"""
-    if name in session.query(Product):
-        do some the user knows that the
-        product is already in the database
-        And ask if they'd like to adjust the
-        price or quantity.
-        
-        this should be a function that is call if and only if 
-        name is in session.query(Product)
-
-"""
