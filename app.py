@@ -105,13 +105,10 @@ def check_product(name_str):
 def backup_csv():
     header = ['product_name', 'product_price', 'product_quantity', 'date_updated']
     data = session.query(Product.product_name, Product.product_price, Product.product_quantity, Product.date_updated).all()
-
     with open('store-inventory///backup.csv', 'w', newline="") as csvfile:
-
         writer = csv.writer(csvfile)
         writer.writerow(header)
         writer.writerows(data)
-
     print('Database successfully backed up!')
     time.sleep(1.5)
 
@@ -129,6 +126,9 @@ def add_csv():
                 date_updated = clean_date(row[3])
                 new_product = Product(product_name=product_name, product_price=product_price, product_quantity=product_quantity, date_updated=date_updated)
                 session.add(new_product)
+            elif product_in_db and product_in_db.date_updated <= clean_date(row[3]):
+                product_in_db.date_updated = clean_date(row[3])
+                # print(product_in_db.product_name, product_in_db.date_updated)
         session.commit()
 
 
@@ -178,19 +178,12 @@ def app():
                 if type(date) == datetime.date:
                     date_error = False
             if check_product(name):
-                product_to_update = session.query(Product.product_name, Product.date_updated).filter(Product.product_name==name).first()
-                #print(product_to_update)
-
-                if product_to_update.date_updated <= date:
-                    product_to_update.date_updated = date
-                    session.commit()
-                    backup_csv()
-                else:
-                    product_to_update.product_price = price
-                    product_to_update.product_quantity = quantity
-                    session.commit()
-                    print('The else clause is running')
-                    backup_csv()
+                product_to_update = session.query(Product).filter(Product.product_name==name).first()
+                product_to_update.date_updated = date
+                product_to_update.product_price = price
+                product_to_update.product_quantity = quantity
+                session.commit()
+                backup_csv()
             else:
                 new_product = Product(product_name=name, product_price=price, product_quantity=quantity, date_updated=date)
                 session.add(new_product)
@@ -198,8 +191,8 @@ def app():
                 print("Product successfully added")
                 time.sleep(1.5)
 
-                # find and return the dupicate by name
-                # only update the price, quantity, and date
+            #     # find and return the dupicate by name
+            #     # only update the price, quantity, and date
         elif choice == 'b':
             backup_csv()
         else:
