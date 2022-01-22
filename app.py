@@ -93,9 +93,6 @@ def add_product():
             backup_csv()
             break
         else:
-            product.product_price = price
-            product.product_quantity = quantity
-            product.date_updated = date
             break
     session.commit()
 
