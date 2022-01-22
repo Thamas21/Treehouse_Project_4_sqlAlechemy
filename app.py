@@ -3,7 +3,11 @@ from models import (Base, session,
 import csv
 import datetime
 import time
-
+'''
+TODO
+REFRACTOR! 
+ALL of the menu options can easily be made into functions
+'''
 
 def menu():
     while True:
@@ -23,13 +27,98 @@ def menu():
                 \rPress enter to continue...  ''')
 
 
+def view_product():
+    id_list = []
+    print('View product by Id')
+    id_list = []
+    for product in session.query(Product):
+        id_list.append(product.product_id)
+    id_error = True
+    while id_error:
+        product_choice = input(f'''
+                \nId Options: {id_list}
+                \rProduct id:  ''')
+        product_choice = clean_id(product_choice, id_list)
+        if type(product_choice) == int:
+            id_error = False
+    product_to_show = session.query(Product).filter(Product.product_id==product_choice).first()
+    input(f'''
+        \nProduct: {product_to_show.product_name}
+        \rPrice: ${product_to_show.product_price / 100}
+        \rQuantity: {product_to_show.product_quantity}
+        \rLast updated: {product_to_show.date_updated}
+        \rPress any key to continue... ''')
+
+
+def add_product():
+    # find and return the dupicate by name
+    # only update the price, quantity, and date
+    name = input('Product name: ')
+    price_error = True
+    while price_error:
+        price = input('Price (ex: $4.99): ')
+        price = clean_price(price)
+        if type(price) == int:
+            price_error = False
+    quantity_error = True
+    while quantity_error:
+        quantity = input('Quantity: ')
+        quantity = clean_quantity(quantity)
+        if type(quantity) == int:
+            quantity_error = False
+    date_error = True
+    while date_error:
+        date = input('Date Updated (ex: month/day/year): ')
+        date = clean_date(date)
+        if type(date) == datetime.date:
+            date_error = False
+    products = session.query(Product)
+    product = session.query(Product).filter(Product.product_name==name).one_or_none()
+    for i in products:
+        if product == None:
+            product_name = name
+            product_price = price
+            product_quantity = quantity
+            date_updated = date
+            new_product = Product(product_name=product_name, product_price=product_price, product_quantity=product_quantity, date_updated=date_updated)
+            session.add(new_product)
+            time.sleep(1.5)
+            print('Product successfully added!')
+            break
+        elif product and product.date_updated <= date:
+            product.date_updated = date
+            product.product_price = price
+            product.product_quantity = quantity
+            print("Product updated!")
+            backup_csv()
+            break
+        else:
+            product.product_price = price
+            product.product_quantity = quantity
+            product.date_updated = date
+            break
+    session.commit()
+
+
+
+def backup_csv():
+    header = ['product_name', 'product_price', 'product_quantity', 'date_updated']
+    data = session.query(Product.product_name, Product.product_price, Product.product_quantity, Product.date_updated).all()
+    with open('store-inventory///backup.csv', 'w', newline="") as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(header)
+        writer.writerows(data)
+    print('Database successfully backed up!')
+    time.sleep(1.5)
+
+
 def clean_date(date_str):
     try:
         date_list = date_str.split('/')
         month = int(date_list[0])
         day = int(date_list[1])
         year = int(date_list[2])
-    except ValueError:
+    except (IndexError, ValueError):
         input('''
             \n****** DATE ERROR! ******
             \rPlease enter a valid date not in the future!
@@ -44,7 +133,7 @@ def clean_price(price_str):
     try:
         price_list = price_str.split('$')
         price_float = float(price_list[1])
-    except IndexError:
+    except (ValueError, IndexError):
         input('''
             \n****** PRICE ERROR! ******
             \rPlease enter a valid price!
@@ -99,18 +188,6 @@ def check_product(name_str):
         return True
     else:
         return False
-    # print(name_list)
-
-
-def backup_csv():
-    header = ['product_name', 'product_price', 'product_quantity', 'date_updated']
-    data = session.query(Product.product_name, Product.product_price, Product.product_quantity, Product.date_updated).all()
-    with open('store-inventory///backup.csv', 'w', newline="") as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow(header)
-        writer.writerows(data)
-    print('Database successfully backed up!')
-    time.sleep(1.5)
 
 
 def add_csv():
@@ -128,7 +205,8 @@ def add_csv():
                 session.add(new_product)
             elif product_in_db and product_in_db.date_updated <= clean_date(row[3]):
                 product_in_db.date_updated = clean_date(row[3])
-                # print(product_in_db.product_name, product_in_db.date_updated)
+                product_in_db.product_price = clean_price(row[1])
+                product_in_db.product_quantity = clean_quantity(row[2])
         session.commit()
 
 
@@ -137,62 +215,9 @@ def app():
     while app_running:
         choice = menu()
         if choice == 'v':
-            id_list = []
-            print('View product by Id')
-            id_list = []
-            for product in session.query(Product):
-                id_list.append(product.product_id)
-            id_error = True
-            while id_error:
-                product_choice = input(f'''
-                        \nId Options: {id_list}
-                        \rProduct id:  ''')
-                product_choice = clean_id(product_choice, id_list)
-                if type(product_choice) == int:
-                    id_error = False
-            product_to_show = session.query(Product).filter(Product.product_id==product_choice).first()
-            input(f'''
-                \nProduct: {product_to_show.product_name}
-                \rPrice: ${product_to_show.product_price / 100}
-                \rQuantity: {product_to_show.product_quantity}
-                \rLast updated: {product_to_show.date_updated}
-                \rPress any key to continue... ''')
+            view_product()
         elif choice == 'a':
-            name = input('Product name: ')
-            price_error = True
-            while price_error:
-                price = input('Price (ex: $4.99): ')
-                price = clean_price(price)
-                if type(price) == int:
-                    price_error = False
-            quantity_error = True
-            while quantity_error:
-                quantity = input('Quantity: ')
-                quantity = clean_quantity(quantity)
-                if type(quantity) == int:
-                    quantity_error = False
-            date_error = True
-            while date_error:
-                date = input('Date Updated (ex: month/day/year): ')
-                date = clean_date(date)
-                if type(date) == datetime.date:
-                    date_error = False
-            if check_product(name):
-                product_to_update = session.query(Product).filter(Product.product_name==name).first()
-                product_to_update.date_updated = date
-                product_to_update.product_price = price
-                product_to_update.product_quantity = quantity
-                session.commit()
-                backup_csv()
-            else:
-                new_product = Product(product_name=name, product_price=price, product_quantity=quantity, date_updated=date)
-                session.add(new_product)
-                session.commit()
-                print("Product successfully added")
-                time.sleep(1.5)
-
-            #     # find and return the dupicate by name
-            #     # only update the price, quantity, and date
+            add_product()
         elif choice == 'b':
             backup_csv()
         else:
