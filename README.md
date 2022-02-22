@@ -1,2 +1,4 @@
 # Treehouse_Project_4_sqlAlechemy
  
+This is another console based program. Users are prompted with a menu where they can choose to view a product by their unique id, add products, or backup the database by creating a new CSV file. The program does not allow for products with the same name. However if the user enters an existing product they are able to update the products values. When importing a CSV file if there are multiple products with the same name the program automatically choose the values for the product with the most recent date. Try this project yourself you will need to download the files, activate a virtual environment, and install the required modules.
+Follow the steps here https://docs.python-guide.org/dev/virtualenvs/ be sure to follow the appropriate steps for your mechine, Macs and PCs vary slightly.
