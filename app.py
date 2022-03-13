@@ -3,11 +3,7 @@ from models import (Base, session,
 import csv
 import datetime
 import time
-'''
-TODO
-REFRACTOR! 
-ALL of the menu options can easily be made into functions
-'''
+
 
 def menu():
     while True:
@@ -36,8 +32,8 @@ def view_product():
     id_error = True
     while id_error:
         product_choice = input(f'''
-                \nId Options: {id_list}
-                \rProduct id:  ''')
+            \nId Options: {id_list}
+            \rProduct id:  ''')
         product_choice = clean_id(product_choice, id_list)
         if type(product_choice) == int:
             id_error = False
