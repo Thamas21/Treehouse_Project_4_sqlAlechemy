@@ -26,7 +26,6 @@ def menu():
 def view_product():
     id_list = []
     print('View product by Id')
-    id_list = []
     for product in session.query(Product):
         id_list.append(product.product_id)
     id_error = True
